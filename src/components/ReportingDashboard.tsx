@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -53,7 +52,7 @@ const ReportingDashboard = () => {
           </div>
           <div>
             <h3 className="text-lg font-semibold">Total Tips Collected</h3>
-            <p>${totalTips.toFixed(2)}</p>
+            <p>₹{totalTips.toFixed(2)}</p>
           </div>
         </div>
 
@@ -71,7 +70,7 @@ const ReportingDashboard = () => {
               {tipBreakdown.map((tip, index) => (
                 <TableRow key={index}>
                   <TableCell className="font-medium">{tip.waiterId}</TableCell>
-                  <TableCell>${tip.totalTips.toFixed(2)}</TableCell>
+                  <TableCell>₹{tip.totalTips.toFixed(2)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -83,3 +82,5 @@ const ReportingDashboard = () => {
 };
 
 export default ReportingDashboard;
+
+    
