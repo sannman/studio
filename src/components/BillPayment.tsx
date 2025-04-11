@@ -6,6 +6,12 @@ import { processPayment } from '@/services/payment';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+    Alert,
+    AlertDescription,
+    AlertTitle,
+} from "@/components/ui/alert"
+import { AlertCircle } from 'lucide-react';
 
 interface PaymentConfirmationProps {
   amount: number;
@@ -15,11 +21,14 @@ interface PaymentConfirmationProps {
 
 const BillPayment = () => {
   const [billAmount, setBillAmount] = useState<number | undefined>(undefined);
-  const [tipAmount, setTipAmount] = useState<number | undefined>(undefined);
+  const [tipPercentage, setTipPercentage] = useState<number | undefined>(0);
   const [qrCode, setQrCode] = useState('');
   const [paymentConfirmation, setPaymentConfirmation] = useState<PaymentConfirmationProps | null>(null);
+  const [upiId, setUpiId] = useState<string>('');
+  const [showUpiInput, setShowUpiInput] = useState<boolean>(false);
 
-  const totalAmount = (billAmount || 0) + (tipAmount || 0);
+  const tipAmount = billAmount ? (billAmount * (tipPercentage || 0) / 100) : 0;
+  const totalAmount = (billAmount || 0) + tipAmount;
 
   const generateQrCode = () => {
     if (billAmount === undefined || billAmount <= 0) {
@@ -27,7 +36,14 @@ const BillPayment = () => {
       return;
     }
 
-    const qrCodeData = `tipsplit:${totalAmount}`;
+    if (!upiId && showUpiInput) {
+      alert('Please enter a valid UPI ID.');
+      return;
+    }
+
+    const amountParam = totalAmount.toFixed(2);
+    const upiParam = upiId ? `&pn=${upiId}` : '';
+    const qrCodeData = `upi://pay?pa=${upiId}&am=${amountParam}&cu=INR${upiParam}`;
     setQrCode(qrCodeData);
   };
 
@@ -36,12 +52,6 @@ const BillPayment = () => {
       alert('Please enter a valid bill amount.');
       return;
     }
-
-    if (tipAmount === undefined) {
-        alert('Please enter a valid tip amount.');
-        return;
-    }
-
 
     const paymentResult = await processPayment({ amount: billAmount, tip: tipAmount });
 
@@ -73,15 +83,41 @@ const BillPayment = () => {
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Tip Amount (₹):</label>
+         <div>
+          <label className="block text-sm font-medium text-gray-700">Tip Percentage:</label>
           <Input
             type="number"
-            placeholder="Enter tip amount"
-            onChange={(e) => setTipAmount(parseFloat(e.target.value))}
+            placeholder="Enter tip percentage"
+            value={tipPercentage}
+            onChange={(e) => setTipPercentage(parseFloat(e.target.value))}
             className="mt-1"
           />
         </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            <input
+              type="checkbox"
+              className="mr-2"
+              checked={showUpiInput}
+              onChange={(e) => setShowUpiInput(e.target.checked)}
+            />
+            Pay to UPI ID?
+          </label>
+        </div>
+
+        {showUpiInput && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700">UPI ID:</label>
+            <Input
+              type="text"
+              placeholder="Enter UPI ID"
+              value={upiId}
+              onChange={(e) => setUpiId(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+        )}
 
         <Button onClick={generateQrCode} variant="accent">Generate QR Code</Button>
 
