@@ -23,42 +23,52 @@ interface PaymentConfirmationProps {
 const BillPayment = () => {
   const [billAmount, setBillAmount] = useState<number | null>(null);
   const [tipAmount, setTipAmount] = useState<number | null>(0);
-  const [mainQrCode, setMainQrCode] = useState('');
-  const [receiveQrCode, setReceiveQrCode] = useState('');
+  const [billQrCode, setBillQrCode] = useState('');
+    const [tipQrCode, setTipQrCode] = useState('');
   const [paymentConfirmation, setPaymentConfirmation] = useState<PaymentConfirmationProps | null>(null);
   const [upiId, setUpiId] = useState<string>('');
   const { toast } = useToast()
 
   const totalAmount = (billAmount || 0) + (tipAmount || 0);
 
-  const generateMainQrCode = () => {
-    if (billAmount === null || billAmount <= 0) {
-      toast({
-          variant: 'destructive',
-          title: 'Invalid Bill Amount',
-          description: 'Please enter a valid bill amount.',
-        });
-      return;
-    }
+    const generateBillQrCode = () => {
+        if (billAmount === null || billAmount <= 0) {
+            toast({
+                variant: 'destructive',
+                title: 'Invalid Bill Amount',
+                description: 'Please enter a valid bill amount.',
+            });
+            return;
+        }
 
-    const amountParam = totalAmount.toFixed(2);
-    const qrCodeData = `upi://pay?am=${amountParam}&cu=INR`;
-    setMainQrCode(qrCodeData);
-  };
+        if (!upiId) {
+            toast({
+                variant: 'destructive',
+                title: 'UPI ID Required',
+                description: 'Please enter your UPI ID to generate the receive payment QR code.',
+            });
+            return;
+        }
 
-  const generateReceiveQrCode = () => {
-    if (!upiId) {
-      toast({
-        variant: 'destructive',
-        title: 'UPI ID Required',
-        description: 'Please enter your UPI ID to generate the receive payment QR code.',
-      });
-      return;
-    }
+        const amountParam = billAmount.toFixed(2);
+        const qrCodeData = `upi://pay?pa=${upiId}&am=${amountParam}&cu=INR`;
+        setBillQrCode(qrCodeData);
+    };
 
-    const qrCodeData = `upi://pay?pa=${upiId}&cu=INR`;
-    setReceiveQrCode(qrCodeData);
-  };
+    const generateTipQrCode = () => {
+         if (!upiId) {
+             toast({
+                 variant: 'destructive',
+                 title: 'UPI ID Required',
+                 description: 'Please enter your UPI ID to generate the receive payment QR code.',
+             });
+             return;
+         }
+        const amountParam = tipAmount.toFixed(2);
+        const qrCodeData = `upi://pay?pa=${upiId}&am=${amountParam}&cu=INR`;
+        setTipQrCode(qrCodeData);
+    };
+
 
   const handlePayment = async () => {
     if (billAmount === null || billAmount <= 0) {
@@ -121,50 +131,48 @@ const BillPayment = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">UPI ID:</label>
-            <Input
-              type="text"
-              placeholder="Enter UPI ID"
-              value={upiId}
-              onChange={(e) => setUpiId(e.target.value)}
-              className="mt-1"
-              required
-            />
-          </div>
+             <label className="block text-sm font-medium text-gray-700">Restaurant UPI ID:</label>
+             <Input
+                 type="text"
+                 placeholder="Enter Restaurant UPI ID"
+                 value={upiId}
+                 onChange={(e) => setUpiId(e.target.value)}
+                 className="mt-1"
+                 required
+             />
+           </div>
 
-        <Button onClick={generateMainQrCode} variant="accent">Generate Bill QR Code</Button>
+                 <Button onClick={generateBillQrCode} variant="accent">Generate Bill QR Code</Button>
+                 {billQrCode && (
+                     <div className="flex flex-col items-center">
+                         <QRCodeCanvas value={billQrCode} size={256} level="H"/>
+                         <p className="mt-2 text-sm text-gray-500">Scan to pay bill</p>
+                     </div>
+                 )}
 
-        {mainQrCode && (
-          <div className="flex flex-col items-center">
-            <QRCodeCanvas value={mainQrCode} size={256} level="H" />
-            <p className="mt-2 text-sm text-gray-500">Scan to pay bill</p>
-          </div>
-        )}
+                 <Button onClick={generateTipQrCode} variant="secondary">Generate Tip QR Code</Button>
+                 {tipQrCode && (
+                     <div className="flex flex-col items-center">
+                         <QRCodeCanvas value={tipQrCode} size={256} level="H"/>
+                         <p className="mt-2 text-sm text-gray-500">Scan to pay tip</p>
+                     </div>
+                 )}
 
-        <Button onClick={generateReceiveQrCode} variant="secondary" >Generate Receive Payment QR Code</Button>
+         {paymentConfirmation === null && (
+           <Button onClick={handlePayment} disabled={!billQrCode} variant="primary">Confirm Payment</Button>
+         )}
 
-        {receiveQrCode && (
-          <div className="flex flex-col items-center">
-            <QRCodeCanvas value={receiveQrCode} size={256} level="H" />
-            <p className="mt-2 text-sm text-gray-500">Scan to pay</p>
-          </div>
-        )}
+         {paymentConfirmation && (
+           <div className="mt-4 p-4 rounded-md bg-green-100">
+             <h3 className="text-lg font-semibold">Payment Confirmation</h3>
+             <p>Bill Amount: ₹{paymentConfirmation.amount.toFixed(2)}</p>
+             <p>Tip: ₹{paymentConfirmation.tip.toFixed(2)}</p>
+             <p>Total Amount: ₹{paymentConfirmation.total.toFixed(2)}</p>
+           </div>
+         )}
+       </CardContent>
+     </Card>
+   );
+ };
 
-        {paymentConfirmation === null && (
-          <Button onClick={handlePayment} disabled={!mainQrCode} variant="primary">Confirm Payment</Button>
-        )}
-
-        {paymentConfirmation && (
-          <div className="mt-4 p-4 rounded-md bg-green-100">
-            <h3 className="text-lg font-semibold">Payment Confirmation</h3>
-            <p>Bill Amount: ₹{paymentConfirmation.amount.toFixed(2)}</p>
-            <p>Tip: ₹{paymentConfirmation.tip.toFixed(2)}</p>
-            <p>Total Amount: ₹{paymentConfirmation.total.toFixed(2)}</p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-};
-
-export default BillPayment;
+ export default BillPayment;

@@ -1,16 +1,29 @@
+"use client";
 
 import BillPayment from "@/components/BillPayment";
 import ReportingDashboard from "@/components/ReportingDashboard";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-start p-24">
       <h1 className="text-4xl font-bold mb-8">TipSplit</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <BillPayment />
-        <ReportingDashboard />
-      </div>
+      <Tabs defaultValue="billPayment" className="w-[400px]">
+        <TabsList>
+          <TabsTrigger value="billPayment">Bill Payment</TabsTrigger>
+          <TabsTrigger value="waiterSetup">Waiter Setup</TabsTrigger>
+          <TabsTrigger value="reporting">Reporting</TabsTrigger>
+        </TabsList>
+        <TabsContent value="billPayment">
+          <BillPayment />
+        </TabsContent>
+        <TabsContent value="waiterSetup">
+          <div>Waiter Account Setup</div>
+        </TabsContent>
+        <TabsContent value="reporting">
+          <ReportingDashboard />
+        </TabsContent>
+      </Tabs>
     </main>
   );
 }
-
