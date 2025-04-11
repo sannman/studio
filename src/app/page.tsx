@@ -2,6 +2,7 @@
 
 import BillPayment from "@/components/BillPayment";
 import ReportingDashboard from "@/components/ReportingDashboard";
+import WaiterSetup from "@/components/WaiterSetup"; // Import WaiterSetup
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Home() {
@@ -18,7 +19,7 @@ export default function Home() {
           <BillPayment />
         </TabsContent>
         <TabsContent value="waiterSetup">
-          <div>Waiter Account Setup</div>
+          <WaiterSetup /> {/* Render WaiterSetup */}
         </TabsContent>
         <TabsContent value="reporting">
           <ReportingDashboard />
