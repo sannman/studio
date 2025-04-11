@@ -21,17 +21,18 @@ interface PaymentConfirmationProps {
 }
 
 const BillPayment = () => {
-  const [billAmount, setBillAmount] = useState<number | undefined>(undefined);
-  const [tipAmount, setTipAmount] = useState<number | undefined>(0);
-  const [qrCode, setQrCode] = useState('');
+  const [billAmount, setBillAmount] = useState<number | null>(null);
+  const [tipAmount, setTipAmount] = useState<number | null>(0);
+  const [mainQrCode, setMainQrCode] = useState('');
+  const [receiveQrCode, setReceiveQrCode] = useState('');
   const [paymentConfirmation, setPaymentConfirmation] = useState<PaymentConfirmationProps | null>(null);
   const [upiId, setUpiId] = useState<string>('');
   const { toast } = useToast()
 
   const totalAmount = (billAmount || 0) + (tipAmount || 0);
 
-  const generateQrCode = () => {
-    if (billAmount === undefined || billAmount <= 0) {
+  const generateMainQrCode = () => {
+    if (billAmount === null || billAmount <= 0) {
       toast({
           variant: 'destructive',
           title: 'Invalid Bill Amount',
@@ -40,22 +41,27 @@ const BillPayment = () => {
       return;
     }
 
+    const amountParam = totalAmount.toFixed(2);
+    const qrCodeData = `upi://pay?am=${amountParam}&cu=INR`;
+    setMainQrCode(qrCodeData);
+  };
+
+  const generateReceiveQrCode = () => {
     if (!upiId) {
       toast({
         variant: 'destructive',
         title: 'UPI ID Required',
-        description: 'Please enter your UPI ID.',
+        description: 'Please enter your UPI ID to generate the receive payment QR code.',
       });
       return;
     }
 
-    const amountParam = totalAmount.toFixed(2);
-    const qrCodeData = `upi://pay?pa=${upiId}&am=${amountParam}&cu=INR`;
-    setQrCode(qrCodeData);
+    const qrCodeData = `upi://pay?pa=${upiId}&cu=INR`;
+    setReceiveQrCode(qrCodeData);
   };
 
   const handlePayment = async () => {
-    if (billAmount === undefined || billAmount <= 0) {
+    if (billAmount === null || billAmount <= 0) {
         toast({
           variant: 'destructive',
           title: 'Invalid Bill Amount',
@@ -64,12 +70,12 @@ const BillPayment = () => {
       return;
     }
 
-    const paymentResult = await processPayment({ amount: billAmount, tip: tipAmount });
+    const paymentResult = await processPayment({ amount: billAmount, tip: tipAmount || 0 });
 
     if (paymentResult.success) {
       setPaymentConfirmation({
         amount: billAmount,
-        tip: tipAmount,
+        tip: tipAmount || 0,
         total: totalAmount,
       });
         toast({
@@ -97,8 +103,8 @@ const BillPayment = () => {
             <Input
               type="number"
               placeholder="Enter bill amount"
-              value={billAmount !== undefined ? billAmount.toString() : ''}
-              onChange={(e) => setBillAmount(e.target.value ? parseFloat(e.target.value) : undefined)}
+              value={billAmount !== null ? billAmount.toString() : ''}
+              onChange={(e) => setBillAmount(e.target.value ? parseFloat(e.target.value) : null)}
               className="mt-1"
             />
           </div>
@@ -108,8 +114,8 @@ const BillPayment = () => {
             <Input
               type="number"
               placeholder="Enter tip amount"
-              value={tipAmount !== undefined ? tipAmount.toString() : ''}
-              onChange={(e) => setTipAmount(e.target.value ? parseFloat(e.target.value) : undefined)}
+              value={tipAmount !== null ? tipAmount.toString() : ''}
+              onChange={(e) => setTipAmount(e.target.value ? parseFloat(e.target.value) : null)}
               className="mt-1"
             />
           </div>
@@ -126,17 +132,26 @@ const BillPayment = () => {
             />
           </div>
 
-        <Button onClick={generateQrCode} variant="accent" disabled={!upiId}>Generate QR Code</Button>
+        <Button onClick={generateMainQrCode} variant="accent">Generate Bill QR Code</Button>
 
-        {qrCode && (
+        {mainQrCode && (
           <div className="flex flex-col items-center">
-            <QRCodeCanvas value={qrCode} size={256} level="H" />
+            <QRCodeCanvas value={mainQrCode} size={256} level="H" />
+            <p className="mt-2 text-sm text-gray-500">Scan to pay bill</p>
+          </div>
+        )}
+
+        <Button onClick={generateReceiveQrCode} variant="secondary" >Generate Receive Payment QR Code</Button>
+
+        {receiveQrCode && (
+          <div className="flex flex-col items-center">
+            <QRCodeCanvas value={receiveQrCode} size={256} level="H" />
             <p className="mt-2 text-sm text-gray-500">Scan to pay</p>
           </div>
         )}
 
         {paymentConfirmation === null && (
-          <Button onClick={handlePayment} disabled={!qrCode} variant="primary">Confirm Payment</Button>
+          <Button onClick={handlePayment} disabled={!mainQrCode} variant="primary">Confirm Payment</Button>
         )}
 
         {paymentConfirmation && (
