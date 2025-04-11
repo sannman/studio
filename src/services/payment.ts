@@ -1,4 +1,4 @@
-
+"use server"
 /**
  * Represents payment information, including the payment amount.
  */
@@ -7,6 +7,10 @@ export interface Payment {
    * The amount paid.
    */
   amount: number;
+  /**
+   * The tip amount.
+   */
+  tip: number;
 }
 
 /**
