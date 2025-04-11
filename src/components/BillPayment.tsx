@@ -21,14 +21,13 @@ interface PaymentConfirmationProps {
 
 const BillPayment = () => {
   const [billAmount, setBillAmount] = useState<number | undefined>(undefined);
-  const [tipPercentage, setTipPercentage] = useState<number | undefined>(0);
+  const [tipAmount, setTipAmount] = useState<number | undefined>(0);
   const [qrCode, setQrCode] = useState('');
   const [paymentConfirmation, setPaymentConfirmation] = useState<PaymentConfirmationProps | null>(null);
   const [upiId, setUpiId] = useState<string>('');
   const [showUpiInput, setShowUpiInput] = useState<boolean>(false);
 
-  const tipAmount = billAmount ? (billAmount * (tipPercentage || 0) / 100) : 0;
-  const totalAmount = (billAmount || 0) + tipAmount;
+  const totalAmount = (billAmount || 0) + (tipAmount || 0);
 
   const generateQrCode = () => {
     if (billAmount === undefined || billAmount <= 0) {
@@ -84,12 +83,12 @@ const BillPayment = () => {
         </div>
 
          <div>
-          <label className="block text-sm font-medium text-gray-700">Tip Percentage:</label>
+          <label className="block text-sm font-medium text-gray-700">Tip Amount (₹):</label>
           <Input
             type="number"
-            placeholder="Enter tip percentage"
-            value={tipPercentage}
-            onChange={(e) => setTipPercentage(parseFloat(e.target.value))}
+            placeholder="Enter tip amount"
+            value={tipAmount}
+            onChange={(e) => setTipAmount(parseFloat(e.target.value))}
             className="mt-1"
           />
         </div>
