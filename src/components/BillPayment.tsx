@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/alert"
 import { AlertCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface PaymentConfirmationProps {
   amount: number;
@@ -27,7 +26,6 @@ const BillPayment = () => {
   const [qrCode, setQrCode] = useState('');
   const [paymentConfirmation, setPaymentConfirmation] = useState<PaymentConfirmationProps | null>(null);
   const [upiId, setUpiId] = useState<string>('');
-  const [activeTab, setActiveTab] = useState("bill");
   const { toast } = useToast()
 
   const totalAmount = (billAmount || 0) + (tipAmount || 0);
@@ -42,9 +40,17 @@ const BillPayment = () => {
       return;
     }
 
+    if (!upiId) {
+      toast({
+        variant: 'destructive',
+        title: 'UPI ID Required',
+        description: 'Please enter your UPI ID.',
+      });
+      return;
+    }
+
     const amountParam = totalAmount.toFixed(2);
-    const upiParam = upiId ? `&pn=${upiId}` : '';
-    const qrCodeData = `upi://pay?pa=${upiId}&am=${amountParam}&cu=INR${upiParam}`;
+    const qrCodeData = `upi://pay?pa=${upiId}&am=${amountParam}&cu=INR`;
     setQrCode(qrCodeData);
   };
 
@@ -86,49 +92,41 @@ const BillPayment = () => {
         <CardDescription>Generate QR code for payment</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col space-y-4">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="bill">Bill &amp; Tip</TabsTrigger>
-            <TabsTrigger value="upi">UPI ID (Optional)</TabsTrigger>
-          </TabsList>
-          <TabsContent value="bill">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Bill Amount (₹):</label>
-              <Input
-                type="number"
-                placeholder="Enter bill amount"
-                value={billAmount !== undefined ? billAmount.toString() : ''}
-                onChange={(e) => setBillAmount(parseFloat(e.target.value))}
-                className="mt-1"
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Bill Amount (₹):</label>
+            <Input
+              type="number"
+              placeholder="Enter bill amount"
+              value={billAmount !== undefined ? billAmount.toString() : ''}
+              onChange={(e) => setBillAmount(e.target.value ? parseFloat(e.target.value) : undefined)}
+              className="mt-1"
+            />
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Tip Amount (₹):</label>
-              <Input
-                type="number"
-                placeholder="Enter tip amount"
-                value={tipAmount !== undefined ? tipAmount.toString() : ''}
-                onChange={(e) => setTipAmount(parseFloat(e.target.value))}
-                className="mt-1"
-              />
-            </div>
-          </TabsContent>
-          <TabsContent value="upi">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">UPI ID:</label>
-              <Input
-                type="text"
-                placeholder="Enter UPI ID"
-                value={upiId}
-                onChange={(e) => setUpiId(e.target.value)}
-                className="mt-1"
-              />
-            </div>
-          </TabsContent>
-        </Tabs>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Tip Amount (₹):</label>
+            <Input
+              type="number"
+              placeholder="Enter tip amount"
+              value={tipAmount !== undefined ? tipAmount.toString() : ''}
+              onChange={(e) => setTipAmount(e.target.value ? parseFloat(e.target.value) : undefined)}
+              className="mt-1"
+            />
+          </div>
 
-        <Button onClick={generateQrCode} variant="accent">Generate QR Code</Button>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">UPI ID:</label>
+            <Input
+              type="text"
+              placeholder="Enter UPI ID"
+              value={upiId}
+              onChange={(e) => setUpiId(e.target.value)}
+              className="mt-1"
+              required
+            />
+          </div>
+
+        <Button onClick={generateQrCode} variant="accent" disabled={!upiId}>Generate QR Code</Button>
 
         {qrCode && (
           <div className="flex flex-col items-center">
@@ -155,5 +153,3 @@ const BillPayment = () => {
 };
 
 export default BillPayment;
-
-    
