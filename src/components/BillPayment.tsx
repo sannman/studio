@@ -1,8 +1,7 @@
-
 "use client";
 
 import { useState } from 'react';
-import QRCode from 'qrcode.react';
+import { QRCodeCanvas } from 'qrcode.react';
 import { processPayment } from '@/services/payment';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,7 +69,7 @@ const BillPayment = () => {
 
         {qrCode && (
           <div className="flex flex-col items-center">
-            <QRCode value={qrCode} size={256} level="H" />
+            <QRCodeCanvas value={qrCode} size={256} level="H" />
             <p className="mt-2 text-sm text-gray-500">Scan to pay</p>
           </div>
         )}
