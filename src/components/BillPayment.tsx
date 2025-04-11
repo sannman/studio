@@ -12,6 +12,7 @@ import {
     AlertTitle,
 } from "@/components/ui/alert"
 import { AlertCircle } from 'lucide-react';
+import { useToast } from "@/hooks/use-toast"
 
 interface PaymentConfirmationProps {
   amount: number;
@@ -26,17 +27,26 @@ const BillPayment = () => {
   const [paymentConfirmation, setPaymentConfirmation] = useState<PaymentConfirmationProps | null>(null);
   const [upiId, setUpiId] = useState<string>('');
   const [showUpiInput, setShowUpiInput] = useState<boolean>(false);
+  const { toast } = useToast()
 
   const totalAmount = (billAmount || 0) + (tipAmount || 0);
 
   const generateQrCode = () => {
     if (billAmount === undefined || billAmount <= 0) {
-      alert('Please enter a valid bill amount.');
+      toast({
+          variant: 'destructive',
+          title: 'Invalid Bill Amount',
+          description: 'Please enter a valid bill amount.',
+        });
       return;
     }
 
     if (!upiId && showUpiInput) {
-      alert('Please enter a valid UPI ID.');
+        toast({
+          variant: 'destructive',
+          title: 'Invalid UPI ID',
+          description: 'Please enter a valid UPI ID.',
+        });
       return;
     }
 
@@ -48,7 +58,11 @@ const BillPayment = () => {
 
   const handlePayment = async () => {
     if (billAmount === undefined || billAmount <= 0) {
-      alert('Please enter a valid bill amount.');
+        toast({
+          variant: 'destructive',
+          title: 'Invalid Bill Amount',
+          description: 'Please enter a valid bill amount.',
+        });
       return;
     }
 
@@ -60,8 +74,16 @@ const BillPayment = () => {
         tip: tipAmount,
         total: totalAmount,
       });
+        toast({
+          title: 'Payment Confirmation',
+          description: `Payment processed successfully. Bill: ₹${billAmount.toFixed(2)}, Tip: ₹${tipAmount.toFixed(2)}, Total: ₹${totalAmount.toFixed(2)}`,
+        });
     } else {
-      alert(`Payment failed: ${paymentResult.message}`);
+        toast({
+          variant: 'destructive',
+          title: 'Payment Failed',
+          description: paymentResult.message,
+        });
     }
   };
 
@@ -77,6 +99,7 @@ const BillPayment = () => {
           <Input
             type="number"
             placeholder="Enter bill amount"
+            value={billAmount !== undefined ? billAmount.toString() : ''}
             onChange={(e) => setBillAmount(parseFloat(e.target.value))}
             className="mt-1"
           />
@@ -87,7 +110,7 @@ const BillPayment = () => {
           <Input
             type="number"
             placeholder="Enter tip amount"
-            value={tipAmount}
+            value={tipAmount !== undefined ? tipAmount.toString() : ''}
             onChange={(e) => setTipAmount(parseFloat(e.target.value))}
             className="mt-1"
           />
