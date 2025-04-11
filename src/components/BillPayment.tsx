@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { processPayment } from '@/services/payment';
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/alert"
 import { AlertCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast"
+import { useWaiterContext } from "@/context/WaiterContext";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface PaymentConfirmationProps {
   amount: number;
@@ -26,8 +28,10 @@ const BillPayment = () => {
   const [billQrCode, setBillQrCode] = useState('');
     const [tipQrCode, setTipQrCode] = useState('');
   const [paymentConfirmation, setPaymentConfirmation] = useState<PaymentConfirmationProps | null>(null);
-  const [upiId, setUpiId] = useState<string>('');
+  const [restaurantUpiId, setRestaurantUpiId] = useState<string>('');
   const { toast } = useToast()
+    const { waiters, addWaiter } = useWaiterContext();
+    const [selectedWaiterId, setSelectedWaiterId] = useState<string | undefined>(undefined);
 
   const totalAmount = (billAmount || 0) + (tipAmount || 0);
 
@@ -41,31 +45,42 @@ const BillPayment = () => {
             return;
         }
 
-        if (!upiId) {
+        if (!restaurantUpiId) {
             toast({
                 variant: 'destructive',
-                title: 'UPI ID Required',
-                description: 'Please enter your UPI ID to generate the receive payment QR code.',
+                title: 'Restaurant UPI ID Required',
+                description: 'Please enter your Restaurant UPI ID to generate the receive payment QR code.',
             });
             return;
         }
 
         const amountParam = billAmount.toFixed(2);
-        const qrCodeData = `upi://pay?pa=${upiId}&am=${amountParam}&cu=INR`;
+        const qrCodeData = `upi://pay?pa=${restaurantUpiId}&am=${amountParam}&cu=INR`;
         setBillQrCode(qrCodeData);
     };
 
     const generateTipQrCode = () => {
-         if (!upiId) {
+         if (!selectedWaiterId) {
              toast({
                  variant: 'destructive',
-                 title: 'UPI ID Required',
-                 description: 'Please enter your UPI ID to generate the receive payment QR code.',
+                 title: 'Waiter Selection Required',
+                 description: 'Please select a waiter to generate the tip QR code.',
              });
              return;
          }
+
+        const selectedWaiter = waiters.find(waiter => waiter.id === selectedWaiterId);
+        if (!selectedWaiter || !selectedWaiter.upiId) {
+            toast({
+                variant: 'destructive',
+                title: 'Waiter UPI ID Missing',
+                description: 'The selected waiter does not have a UPI ID configured.',
+            });
+            return;
+        }
+
         const amountParam = tipAmount.toFixed(2);
-        const qrCodeData = `upi://pay?pa=${upiId}&am=${amountParam}&cu=INR`;
+        const qrCodeData = `upi://pay?pa=${selectedWaiter.upiId}&am=${amountParam}&cu=INR`;
         setTipQrCode(qrCodeData);
     };
 
@@ -135,44 +150,61 @@ const BillPayment = () => {
              <Input
                  type="text"
                  placeholder="Enter Restaurant UPI ID"
-                 value={upiId}
-                 onChange={(e) => setUpiId(e.target.value)}
+                 value={restaurantUpiId}
+                 onChange={(e) => setRestaurantUpiId(e.target.value)}
                  className="mt-1"
                  required
              />
            </div>
 
-                 <Button onClick={generateBillQrCode} variant="accent">Generate Bill QR Code</Button>
-                 {billQrCode && (
-                     <div className="flex flex-col items-center">
-                         <QRCodeCanvas value={billQrCode} size={256} level="H"/>
-                         <p className="mt-2 text-sm text-gray-500">Scan to pay bill</p>
-                     </div>
-                 )}
+                  <Button onClick={generateBillQrCode} variant="accent">Generate Bill QR Code</Button>
+                  {billQrCode && (
+                      <div className="flex flex-col items-center">
+                          <QRCodeCanvas value={billQrCode} size={256} level="H"/>
+                          <p className="mt-2 text-sm text-gray-500">Scan to pay bill</p>
+                      </div>
+                  )}
 
-                 <Button onClick={generateTipQrCode} variant="secondary">Generate Tip QR Code</Button>
-                 {tipQrCode && (
-                     <div className="flex flex-col items-center">
-                         <QRCodeCanvas value={tipQrCode} size={256} level="H"/>
-                         <p className="mt-2 text-sm text-gray-500">Scan to pay tip</p>
-                     </div>
-                 )}
-
-         {paymentConfirmation === null && (
-           <Button onClick={handlePayment} disabled={!billQrCode} variant="primary">Confirm Payment</Button>
-         )}
-
-         {paymentConfirmation && (
-           <div className="mt-4 p-4 rounded-md bg-green-100">
-             <h3 className="text-lg font-semibold">Payment Confirmation</h3>
-             <p>Bill Amount: ₹{paymentConfirmation.amount.toFixed(2)}</p>
-             <p>Tip: ₹{paymentConfirmation.tip.toFixed(2)}</p>
-             <p>Total Amount: ₹{paymentConfirmation.total.toFixed(2)}</p>
+           <div>
+               <label className="block text-sm font-medium text-gray-700">Select Waiter:</label>
+               <Select value={selectedWaiterId} onValueChange={setSelectedWaiterId}>
+                   <SelectTrigger className="w-[180px]">
+                       <SelectValue placeholder="Select a waiter"/>
+                   </SelectTrigger>
+                   <SelectContent>
+                       {waiters.map((waiter) => (
+                           <SelectItem key={waiter.id} value={waiter.id}>
+                               {waiter.id}
+                           </SelectItem>
+                       ))}
+                   </SelectContent>
+               </Select>
            </div>
-         )}
-       </CardContent>
-     </Card>
-   );
- };
 
- export default BillPayment;
+                  <Button onClick={generateTipQrCode} variant="secondary">Generate Tip QR Code</Button>
+                  {tipQrCode && (
+                      <div className="flex flex-col items-center">
+                          <QRCodeCanvas value={tipQrCode} size={256} level="H"/>
+                          <p className="mt-2 text-sm text-gray-500">Scan to pay tip to waiter</p>
+                      </div>
+                  )}
+
+          {paymentConfirmation === null && (
+            <Button onClick={handlePayment} disabled={!billQrCode} variant="primary">Confirm Payment</Button>
+          )}
+
+          {paymentConfirmation && (
+            <div className="mt-4 p-4 rounded-md bg-green-100">
+              <h3 className="text-lg font-semibold">Payment Confirmation</h3>
+              <p>Bill Amount: ₹{paymentConfirmation.amount.toFixed(2)}</p>
+              <p>Tip: ₹{paymentConfirmation.tip.toFixed(2)}</p>
+              <p>Total Amount: ₹{paymentConfirmation.total.toFixed(2)}</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
+
+  export default BillPayment;
+

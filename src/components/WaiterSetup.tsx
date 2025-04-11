@@ -5,28 +5,38 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast"
+import { useWaiterContext } from "@/context/WaiterContext";
 
 const WaiterSetup = () => {
-    const [waiterId, setWaiterId] = useState<string>('');
     const [upiId, setUpiId] = useState<string>('');
     const { toast } = useToast()
+    const { addWaiter } = useWaiterContext();
+    const [waiterName, setWaiterName] = useState('');
 
     const handleSubmit = () => {
-        if (!waiterId || !upiId) {
+        if (!waiterName || !upiId) {
             toast({
                 variant: 'destructive',
                 title: 'Missing Information',
-                description: 'Please enter both Waiter ID and UPI ID.',
+                description: 'Please enter both Waiter Name and UPI ID.',
             });
             return;
         }
 
-        // Simulate saving the waiter's UPI ID
-        console.log(`Saving UPI ID ${upiId} for Waiter ${waiterId}`);
+        const newWaiter = {
+            id: waiterName, // Using name as ID
+            upiId: upiId,
+        };
+
+        addWaiter(newWaiter);
+
         toast({
             title: 'Account Setup',
-            description: `UPI ID ${upiId} saved for Waiter ${waiterId}.`,
+            description: `UPI ID ${upiId} saved for Waiter ${waiterName}.`,
         });
+
+        setWaiterName('');
+        setUpiId('');
     };
 
     return (
@@ -37,12 +47,12 @@ const WaiterSetup = () => {
             </CardHeader>
             <CardContent className="flex flex-col space-y-4">
                 <div>
-                    <label className="block text-sm font-medium text-gray-700">Waiter ID:</label>
+                    <label className="block text-sm font-medium text-gray-700">Waiter Name:</label>
                     <Input
                         type="text"
-                        placeholder="Enter Waiter ID"
-                        value={waiterId}
-                        onChange={(e) => setWaiterId(e.target.value)}
+                        placeholder="Enter Waiter Name"
+                        value={waiterName}
+                        onChange={(e) => setWaiterName(e.target.value)}
                         className="mt-1"
                     />
                 </div>
