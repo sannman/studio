@@ -20,7 +20,13 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    return {
+      user: null,
+      login: async () => {},
+      signup: async () => {},
+      logout: async () => {},
+      loading: false,
+    };
   }
   return context;
 };
@@ -31,140 +37,28 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast()
     const [auth, setAuth] = useState<Auth | null>(null);
 
-  // Initialize Firebase only once
-  useEffect(() => {
-    if (!firebaseConfig || typeof firebaseConfig !== 'object') {
-      console.error('Firebase configuration is missing or invalid:', firebaseConfig);
-      return;
-    }
+  const signup = async (email: string, password: string) => {};
 
-    // Check if Firebase is already initialized
-    if (getApps().length === 0) {
-      try {
-        initializeApp(firebaseConfig);
-        console.log('Firebase initialized successfully');
-          // Get the auth instance after Firebase is initialized
-          setAuth(getAuth());
-      } catch (error: any) {
-        console.error("Failed to initialize Firebase:", error.message);
-        toast({
-          variant: 'destructive',
-          title: 'Firebase Initialization Failed',
-          description: 'There was an error initializing Firebase. Please check your configuration.',
-        });
-        return;
-      }
-    } else {
-        // Firebase already initialized, get the auth instance
-        setAuth(getAuth());
-    }
-  }, []);
+  const login = async (email: string, password: string) => {};
 
-  useEffect(() => {
-    if (auth) {
-      const unsubscribe = onAuthStateChanged(auth, (user) => {
-        setUser(user);
-        setLoading(false);
-      });
-
-      return () => unsubscribe();
-    }
-  }, [auth]);
-
-  const signup = async (email: string, password: string) => {
-    if (!auth) {
-      toast({
-        variant: 'destructive',
-        title: 'Signup Failed',
-        description: 'Firebase authentication not initialized.',
-      });
-      return;
-    }
-    try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      toast({
-        title: "Signup Successful",
-        description: "Your account has been successfully created.",
-      });
-      router.push('/');
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Signup Failed",
-        description: error.message || "There was an error creating your account.",
-      });
-      throw error;
-    }
-  };
-
-  const login = async (email: string, password: string) => {
-    if (!auth) {
-      toast({
-        variant: 'destructive',
-        title: 'Login Failed',
-        description: 'Firebase authentication not initialized.',
-      });
-      return;
-    }
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      toast({
-        title: "Login Successful",
-        description: "You have successfully logged in.",
-      });
-      router.push('/');
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Login Failed",
-        description: error.message || "Invalid credentials.",
-      });
-      throw error;
-    }
-   };
-
-  const logout = async () => {
-    if (!auth) {
-      toast({
-        variant: 'destructive',
-        title: 'Logout Failed',
-        description: 'Firebase authentication not initialized.',
-      });
-      return;
-    }
-    try {
-      await signOut(auth);
-      toast({
-        title: "Logout Successful",
-        description: "You have been successfully logged out.",
-      });
-      router.push('/login');
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Logout Failed",
-        description: error.message || "There was an error logging out.",
-      });
-      throw error;
-    }
-  };
+  const logout = async () => {};
 
   const value: AuthContextType = {
-    user,
-    login,
-    signup,
-    logout,
-    loading,
+    user: null,
+    login:  async () => {},
+    signup:  async () => {},
+    logout:  async () => {},
+    loading: false,
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };
