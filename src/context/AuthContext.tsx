@@ -2,7 +2,7 @@
 
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { FirebaseApp, initializeApp } from "firebase/app";
+import { FirebaseApp, initializeApp, getApps } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, Auth } from "firebase/auth";
 import { firebaseConfig } from '@/firebase.config';
 import { useToast } from "@/hooks/use-toast"
@@ -34,37 +34,57 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const { toast } = useToast()
+    const [auth, setAuth] = useState<Auth | null>(null);
 
+  // Initialize Firebase only once
   useEffect(() => {
     if (!firebaseConfig || typeof firebaseConfig !== 'object') {
       console.error('Firebase configuration is missing or invalid:', firebaseConfig);
       return;
     }
-    try {
-      initializeApp(firebaseConfig);
-    } catch (error: any) {
-      console.error("Failed to initialize Firebase:", error.message);
-      toast({
+
+    // Check if Firebase is already initialized
+    if (getApps().length === 0) {
+      try {
+        initializeApp(firebaseConfig);
+        console.log('Firebase initialized successfully');
+          // Get the auth instance after Firebase is initialized
+          setAuth(getAuth());
+      } catch (error: any) {
+        console.error("Failed to initialize Firebase:", error.message);
+        toast({
           variant: 'destructive',
           title: 'Firebase Initialization Failed',
           description: 'There was an error initializing Firebase. Please check your configuration.',
-      });
-      return;
+        });
+        return;
+      }
+    } else {
+        // Firebase already initialized, get the auth instance
+        setAuth(getAuth());
     }
   }, []);
 
-  const auth: Auth = getAuth();
-
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setLoading(false);
-    });
+    if (auth) {
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        setUser(user);
+        setLoading(false);
+      });
 
-    return () => unsubscribe();
+      return () => unsubscribe();
+    }
   }, [auth]);
 
   const signup = async (email: string, password: string) => {
+    if (!auth) {
+      toast({
+        variant: 'destructive',
+        title: 'Signup Failed',
+        description: 'Firebase authentication not initialized.',
+      });
+      return;
+    }
     try {
       await createUserWithEmailAndPassword(auth, email, password);
       toast({
@@ -73,7 +93,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
       router.push('/');
     } catch (error: any) {
-       toast({
+      toast({
         variant: "destructive",
         title: "Signup Failed",
         description: error.message || "There was an error creating your account.",
@@ -83,6 +103,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const login = async (email: string, password: string) => {
+    if (!auth) {
+      toast({
+        variant: 'destructive',
+        title: 'Login Failed',
+        description: 'Firebase authentication not initialized.',
+      });
+      return;
+    }
     try {
       await signInWithEmailAndPassword(auth, email, password);
       toast({
@@ -91,16 +119,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
       router.push('/');
     } catch (error: any) {
-       toast({
+      toast({
         variant: "destructive",
         title: "Login Failed",
         description: error.message || "Invalid credentials.",
       });
       throw error;
     }
-  };
+   };
 
   const logout = async () => {
+    if (!auth) {
+      toast({
+        variant: 'destructive',
+        title: 'Logout Failed',
+        description: 'Firebase authentication not initialized.',
+      });
+      return;
+    }
     try {
       await signOut(auth);
       toast({
